@@ -18,7 +18,7 @@ warnings.filterwarnings(action='ignore', category=DeprecationWarning)
 
 # Generate data
 X, y = datasets.make_classification(
-    n_samples=1000, n_classes=3, n_clusters_per_class=1)
+    n_samples=10000, n_classes=3, n_clusters_per_class=1)
 # Split original dataset to train and test parts.
 train_ratio = 0.7
 X_train = X[:int(len(X)*train_ratio), :]
