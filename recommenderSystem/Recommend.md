@@ -9,14 +9,14 @@
 
 数据分析：ijcai2016_taobao.csv这张表表示交易数据，从所含字段中可以得到商家的id(Seller id)和商品的id(Item id). 由于存在商品类别的id，且统计得知有72个不同的类别。因此，推荐过程不考虑Item，转而考虑商品的类别，Online_Action_id字段为0表示用户点击，1表示购买。由于题目要求单个买家在每个商品上的浏览、收藏、推荐，和购买数量。但这里没有收藏和推荐的数据，我们以用户点击表示浏览。
 
-###方案步骤
+### 方案步骤
 1. 由于题目要求推荐用户给商家，因此，我们只使用用户的交易数据即ijcai2016_taobao.csv；
-2. 根据商品的类别，统计用户***购买以及点击***同类商品的数量。由于有72个不同的类别，因此每个用户构成两个长度为72维的特征向量，一个ub表示购买数，一个uc表示点击数；
+2. 根据商品的类别，统计用户购买以及点击同类商品的数量。由于有72个不同的类别，因此每个用户构成两个长度为72维的特征向量，一个ub表示购买数，一个uc表示点击数；
 3. 根据Seller_id和Category_id字段统计每个商家含有的商品类别id。这是一个长度为72维的二值向量-s；
 4. 计算用户的特征向量和商家的特征向量的相似度。然后根据相似度做一个Rank，选取相似度Top-k的用户推荐给商家。
 相似度计算方法如下：
 ![这里写图片描述](https://github.com/xuehuachunsheng/study_sklearn/blob/master/recommenderSystem/equation.gif)
-为了防止分母为0导致的NaN问题，给分母加上一个比较小的数$\epsilon$。
+为了防止分母为0导致的NaN问题，给分母加上一个比较小的数epsilon。
 
 主要代码为recommenderSystem/userFeatureDictAndNeighborComputing.py
 中间结果：feature.csv -- 用户购买或者点击某一个类别的商品次数。
