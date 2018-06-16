@@ -7,7 +7,7 @@
 该数据包含三张表：
 ![这里写图片描述](https://github.com/xuehuachunsheng/study_sklearn/blob/master/recommenderSystem/datatable.png)
 
-数据分析：ijcai2016_taobao.csv这张表表示交易数据，从所含字段中可以得到商家的id(Seller id)和商品的id(Item id). 由于存在商品类别的id，且统计得知有72个不同的类别。因此，推荐过程不考虑Item，转而考虑商品的类别，Online_Action_id字段为0表示用户点击，1表示购买。由于题目要求单个买家在每个商品上的浏览、收藏、推荐，和购买数量。但这里没有收藏和推荐的数据，我们以用户点击表示浏览。
+数据分析：ijcai2016_taobao.csv这张表表示交易数据，从所含字段中可以得到商家的id(Seller id)和商品的id(Item id). 由于存在商品类别的id，且统计得知有72个不同的类别。因此，推荐过程不考虑Item，转而考虑商品的类别，Online_Action_id字段为0表示用户点击，1表示购买。由于题目要求单个买家在每个商品上的浏览、收藏、推荐，和购买数量。但这里没有收藏和推荐的数据，我们以用户点击表示浏览、收藏和推荐。
 
 ### 方案步骤
 1. 由于题目要求推荐用户给商家，因此，我们只使用用户的交易数据即ijcai2016_taobao.csv；
