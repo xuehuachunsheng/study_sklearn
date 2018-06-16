@@ -5,7 +5,8 @@
 因此数据选用一个较为近似的数据，阿里云天池数据：User Behavior Data on Taobao/Tmall IJCAI16 Contest
 
 该数据包含三张表：
-![这里写图片描述](http://https://github.com/xuehuachunsheng/study_sklearn/blob/master/recommenderSystem/datatable.png)
+![这里写图片描述](https://github.com/xuehuachunsheng/study_sklearn/blob/master/recommenderSystem/datatable.png)
+
 Table1. ijcai2016_taobao.csv
 |Field|Description|
 |:-|:-|
