@@ -1,7 +1,20 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 '''
-Simulate the distributed k-means algorithm
+分布式kmeans的仿真算法。
+算法思想：假设有n个样本需要聚类，现有m个pc机(节点)，那么按照等分(或近似等分)的手段将这n个样本分成m份，
+每一份分配给一个节点，单个节点会在迭代的时候计算部分样本的中心，并保存每个簇的样本个数，这是为了方便
+进行全局样本中心的更新。在主机拿到所有节点的中心和对应的样本个数，就可以在在单个节点上做全局中心的更新。
+一个节点所存储的样本不会随迭代次数的变化而变化。因此避免了因样本分配导致的额外时间开销。另外，设置了
+一些全局变量如下：
+    样本数量 -- n_samples
+    样本维度 -- n_dim
+    全局中心 -- centers
+    节点个数 -- num_nodes
+    节点对应的样本下标范围（或者在文件中的行号范围） -- sample_idxx_range
+    聚类结果 -- cluster_results_all
+    所有节点所计算的中心 -- c_centerss
+    所有节点所计算的每个簇的样本个数 -- n_samples_each_cluster_node
 '''
 
 from sklearn.datasets import make_blobs
@@ -38,7 +51,7 @@ n_samples_each_cluster_node = np.zeros((num_nodes, k), dtype=int)
 
 def map(samples):
     '''
-    Define each iteration in each nodes
+    Compute the centers of the part of samples
 
     Input: 
         samples -- the samples in each nodes
@@ -80,7 +93,8 @@ def reduce(cluster_results, c_centers, n_samples_each_cluster, nodei):
 
 def wait():
     '''
-        A simulated function that wait other nodes
+        A simulated function that wait other nodes.
+        In fact, it doesn't works
     '''
     pass
 
