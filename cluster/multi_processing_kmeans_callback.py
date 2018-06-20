@@ -54,7 +54,7 @@ c_centerss = np.zeros((num_nodes, k, n_dim))  # current centers of each node
 n_samples_each_cluster_node = np.zeros((num_nodes, k), dtype=int)
 # End of global variable
 
-def map(a):
+def map(samples_and_nodei):
     '''
     Compute the centers of the part of samples
 
@@ -66,8 +66,8 @@ def map(a):
         c_centers -- the centers of the node
         n_samples_each_cluster -- the number of samples of each cluster of the node
     '''
-    samples = a[0]
-    nodei = a[1]
+    samples = samples_and_nodei[0]
+    nodei = samples_and_nodei[1]
     cluster_results = np.zeros(len(samples), dtype=int)
     n_samples_each_cluster = np.zeros(k, dtype=int)
     c_centers = np.zeros((k, n_dim))
@@ -101,8 +101,8 @@ if __name__ == '__main__':
         processS = ms.pool.Pool(num_nodes)
         
         for i in range(num_nodes):
-            a = (X[sample_idxx_range[i, 0]:sample_idxx_range[i, 1], :], i)
-            processS.apply_async(map, args=(a, ), callback=reduce)
+            samples_and_nodei = (X[sample_idxx_range[i, 0]:sample_idxx_range[i, 1], :], i)
+            processS.apply_async(map, args=(samples_and_nodei, ), callback=reduce)
         processS.close() # Wait all the sub processes 
         processS.join() # Main process blocks until all sub processes
         # End of Parallel computing process
