@@ -1,27 +1,27 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 '''
-分布式kmeans的仿真算法。
+kmeans并行计算算法，利用了进程池回调机制。
 算法思想：假设有n个样本需要聚类，现有m个pc机(节点)，那么按照等分(或近似等分)的手段将这n个样本分成m份，
-每一份分配给一个节点，单个节点会在迭代的时候计算部分样本的中心，并保存每个簇的样本个数，这是为了方便
-进行全局样本中心的更新。在主机拿到所有节点的中心和对应的样本个数，就可以在在单个节点上做全局中心的更新。
-一个节点所存储的样本不会随迭代次数的变化而变化。因此避免了因样本分配导致的额外时间开销。另外，设置了
-一些全局变量如下：
+每一份分配给子进程，子进程会在迭代的时候计算部分样本的中心，并返回每个簇的样本个数，这是为了方便
+进行全局样本中心的更新。在主进程拿到所有节点的中心和对应的样本个数，就可以在在主进程上做全局中心的更新。
+全局变量
     样本数量 -- n_samples
     样本维度 -- n_dim
     全局中心 -- centers
-    节点个数 -- num_nodes
-    节点对应的样本下标范围（或者在文件中的行号范围） -- sample_idxx_range
+    子进程个数 -- num_nodes
+    子进程将要计算的样本下标范围（或者在文件中的行号范围） -- sample_idxx_range
     聚类结果 -- cluster_results_all
-    所有节点所计算的中心 -- c_centerss
-    所有节点所计算的每个簇的样本个数 -- n_samples_each_cluster_node
-测试结果：
-    运行20次聚类的平均时间开销：1.7s
+    所有子进程所计算的中心 -- c_centerss
+    所有子进程所计算的每个簇的样本个数 -- n_samples_each_cluster_node
+
 '''
 
 from sklearn.datasets import make_blobs
 import numpy as np
 from matplotlib import pyplot as plt
+import multiprocessing as ms
+import os
 import time
 
 np.seterr(divide='ignore',invalid='ignore')
@@ -54,8 +54,7 @@ c_centerss = np.zeros((num_nodes, k, n_dim))  # current centers of each node
 n_samples_each_cluster_node = np.zeros((num_nodes, k), dtype=int)
 # End of global variable
 
-
-def map(samples):
+def map(a):
     '''
     Compute the centers of the part of samples
 
@@ -67,6 +66,8 @@ def map(samples):
         c_centers -- the centers of the node
         n_samples_each_cluster -- the number of samples of each cluster of the node
     '''
+    samples = a[0]
+    nodei = a[1]
     cluster_results = np.zeros(len(samples), dtype=int)
     n_samples_each_cluster = np.zeros(k, dtype=int)
     c_centers = np.zeros((k, n_dim))
@@ -76,35 +77,45 @@ def map(samples):
         cluster_results[i] = np.argmin(t_dists)
         n_samples_each_cluster[cluster_results[i]] += 1
         c_centers[cluster_results[i]] += sample
-
     for i, m in enumerate(n_samples_each_cluster):
         if m != 0:
             c_centers[i] = c_centers[i] / m
-    return cluster_results, c_centers, n_samples_each_cluster
+    return cluster_results, c_centers, n_samples_each_cluster, nodei
+
+def reduce(result):
+    # To change global variable.
+    #global cluster_results_all, c_centerss, n_samples_each_cluster_node 
+    cluster_results, c_centers, n_samples_each_cluster, nodei = result
+    # There is no neccesary to add lock
+    cluster_results_all[sample_idxx_range[nodei, 0]:sample_idxx_range[nodei, 1]
+                            ], c_centerss[nodei], n_samples_each_cluster_node[nodei] = cluster_results, c_centers, n_samples_each_cluster
 
 if __name__ == '__main__':
     avg_time = 0
-    for i in range(20):
-        c_time = time.clock()
-        t_centers = np.random.randn(k, n_dim)
-        while abs(np.sum((t_centers - centers)**2)) > 1e-2:
-            centers = t_centers
-            # Simulate the parallel computing process
-            for i in range(num_nodes):
-                cluster_results, c_centers, n_samples_each_cluster = map(
-                    X[sample_idxx_range[i, 0]:sample_idxx_range[i, 1], :])
-                cluster_results_all[sample_idxx_range[i, 0]:sample_idxx_range[i, 1]
-                            ], c_centerss[i], n_samples_each_cluster_node[i] = cluster_results, c_centers, n_samples_each_cluster
-            # End of simulated
-            # Recompute centers
-            t_centers = np.zeros((k, n_dim))
-            for i in range(num_nodes):
-                t_n_samples = n_samples_each_cluster_node[i, :].reshape((k, 1))
-                t_centers += c_centerss[i] * np.tile(t_n_samples, (1, n_dim))
-            t_centers /= np.tile(np.sum(n_samples_each_cluster_node,
-                                        axis=0).reshape((k, 1)), (1, n_dim))
-        avg_time += time.clock() - c_time
-    print('Average time costs: ', avg_time / 20)
+    
+    c_time = time.clock()
+    t_centers = np.random.randn(k, n_dim)
+    while abs(np.sum((t_centers - centers)**2)) > 1e-2:
+        centers = t_centers
+        # Parallel computing process
+        processS = ms.pool.Pool(num_nodes)
+        
+        for i in range(num_nodes):
+            a = (X[sample_idxx_range[i, 0]:sample_idxx_range[i, 1], :], i)
+            processS.apply_async(map, args=(a, ), callback=reduce)
+        processS.close() # Wait all the sub processes 
+        processS.join() # Main process blocks until all sub processes
+        # End of Parallel computing process
+        
+        # Recompute centers
+        t_centers = np.zeros((k, n_dim))
+        for i in range(num_nodes):
+            t_n_samples = n_samples_each_cluster_node[i, :].reshape((k, 1))
+            t_centers += c_centerss[i] * np.tile(t_n_samples, (1, n_dim))
+        t_centers /= np.tile(np.sum(n_samples_each_cluster_node,
+                                    axis=0).reshape((k, 1)), (1, n_dim))
+
+    print('time costs: ', time.clock() - c_time)
 
     for i in range(k):
         plt.scatter(X[cluster_results_all == i, 0],
