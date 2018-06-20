@@ -93,7 +93,7 @@ if __name__ == '__main__':
             processS = ms.pool.Pool(num_nodes)
             c_results = np.empty(num_nodes, dtype=object)
             for i in range(num_nodes):
-                # pipe: child process --> parent process
+                # message queue: child process --> parent process
                 c_results[i] = processS.apply_async(map, args=(X[sample_idxx_range[i, 0]:sample_idxx_range[i, 1], :], ))
             processS.close() # Wait all the sub processes 
             processS.join() # Main process blocks until all sub processes
